@@ -1,0 +1,65 @@
+[
+  {
+    "id": "field-0",
+    "latitude": 55.0,
+    "longitude": 37.0,
+    "value": 0.0,
+    "source": "Synthetic measured field"
+  },
+  {
+    "id": "field-1",
+    "latitude": 55.0,
+    "longitude": 37.01,
+    "value": 1.0,
+    "source": "Synthetic measured field"
+  },
+  {
+    "id": "field-2",
+    "latitude": 55.0,
+    "longitude": 37.02,
+    "value": 2.0,
+    "source": "Synthetic measured field"
+  },
+  {
+    "id": "field-3",
+    "latitude": 55.01,
+    "longitude": 37.0,
+    "value": 2.0,
+    "source": "Synthetic measured field"
+  },
+  {
+    "id": "field-4",
+    "latitude": 55.01,
+    "longitude": 37.01,
+    "value": 3.0,
+    "source": "Synthetic measured field"
+  },
+  {
+    "id": "field-5",
+    "latitude": 55.01,
+    "longitude": 37.02,
+    "value": 4.0,
+    "source": "Synthetic measured field"
+  },
+  {
+    "id": "field-6",
+    "latitude": 55.02,
+    "longitude": 37.0,
+    "value": 4.0,
+    "source": "Synthetic measured field"
+  },
+  {
+    "id": "field-7",
+    "latitude": 55.02,
+    "longitude": 37.01,
+    "value": 5.0,
+    "source": "Synthetic measured field"
+  },
+  {
+    "id": "field-8",
+    "latitude": 55.02,
+    "longitude": 37.02,
+    "value": 6.0,
+    "source": "Synthetic measured field"
+  }
+]

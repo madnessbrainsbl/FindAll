@@ -1,0 +1,12 @@
+{
+  "titles": ["python", "backend", "developer", "engineer"],
+  "skills": ["python", "sql", "docker", "fastapi", "postgres"],
+  "exclude": ["senior", "principal", "unpaid"],
+  "remote_only": false,
+  "locations": [],
+  "role": "Python Developer",
+  "highlight": "5 years of Python: FastAPI services, PostgreSQL in Docker, CI/CD",
+  "team": "",
+  "project": "a core team product",
+  "metric": "reduced API response time by 40%"
+}

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wiretaper"
+version = "1.0.0"
+description = "Wireless OSINT & Signal Intelligence Platform"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "Flask",
+    "requests",
+    "pandas",
+    "openpyxl"
+]
+
+[project.scripts]
+wiretapper = "cli:main"
+wiretaper = "cli:main"
+
+[tool.setuptools]
+py-modules = ["app", "cli", "telemetry_importer", "flock_manager"]
+
+[tool.setuptools.package-data]
+"*" = ["templates/*", "static/*", "uploads/*"]

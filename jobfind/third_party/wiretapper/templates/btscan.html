@@ -1,0 +1,2461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WireTapper // Tactical Bluetooth LE Radar</title>
+    <link rel="icon" href="/static/wiretapper.png" type="image/png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+/* ═══════════════════════════════════════════════════════════════
+   WIRETAPPER // BLUETOOTH LE RADAR DESIGN SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+    --primary-color: #00FFD1;
+    --primary-glow: rgba(0, 255, 209, 0.35);
+    --accent-cyan: #00F5FF;
+    --accent-magenta: #FF007F;
+    --accent-yellow: #FFD600;
+    --accent-green: #00FF88;
+    --accent-red: #EF4444;
+    --background-dark: #07090E;
+    --card-background: rgba(8, 12, 20, 0.85);
+    --panel-bg: rgba(6, 10, 18, 0.92);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-bright: rgba(0, 255, 209, 0.35);
+    --text-main: #F1F5F9;
+    --text-dim: #7E8FA4;
+    --text-label: #94A3B8;
+    --glass-bg: rgba(10, 15, 26, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.6);
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    outline: none;
+}
+
+html, body {
+    height: 100%;
+    background-color: var(--background-dark);
+    color: var(--text-main);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+    letter-spacing: 0.2px;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle background grid */
+.bg-grid {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image:
+        linear-gradient(rgba(0, 255, 209, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 209, 0.025) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TACTICAL HUD LOADER OVERLAY (WIRETAPPER.PNG + CYBER ANIMATIONS)
+   ═══════════════════════════════════════════════════════════════ */
+.wiretapper-loader-overlay {
+    position: fixed;
+    inset: 0;
+    background: #020408;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s ease;
+}
+
+.wiretapper-loader-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.loader-container {
+    position: relative;
+    width: 360px;
+    max-width: calc(100vw - 40px);
+    background: #03060B;
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    padding: 28px 24px;
+    clip-path: polygon(
+        0 0,
+        calc(100% - 20px) 0,
+        100% 20px,
+        100% 100%,
+        20px 100%,
+        0 calc(100% - 20px)
+    );
+    filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.9));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.loader-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: rgba(0, 255, 209, 0.3);
+    clip-path: polygon(
+        0 0,
+        calc(100% - 20px) 0,
+        100% 20px,
+        100% 100%,
+        20px 100%,
+        0 calc(100% - 20px)
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 1px;
+}
+
+.loader-emblem-wrap {
+    position: relative;
+    width: 150px;
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.loader-wiretapper-img {
+    width: 130px;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 12px rgba(0, 255, 209, 0.65)) drop-shadow(0 0 26px rgba(0, 198, 255, 0.35));
+    animation: wiretapper-float 2.4s ease-in-out infinite alternate;
+    position: relative;
+    z-index: 2;
+}
+
+.loader-radar-halo {
+    position: absolute;
+    width: 135px;
+    height: 135px;
+    border-radius: 50%;
+    border: 1.5px dashed rgba(0, 255, 209, 0.35);
+    animation: loader-spin 12s linear infinite;
+    box-shadow: 0 0 24px rgba(0, 255, 209, 0.15) inset;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.loader-radar-scanner {
+    position: absolute;
+    inset: -6px;
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 255, 209, 0.28) 50%, transparent 100%);
+    opacity: 0.7;
+    animation: radar-sweep-vertical 2.2s linear infinite;
+    pointer-events: none;
+    z-index: 3;
+    mix-blend-mode: screen;
+}
+
+@keyframes wiretapper-float {
+    0% {
+        transform: translateY(0px) scale(1);
+        filter: drop-shadow(0 0 10px rgba(0, 255, 209, 0.5));
+    }
+    100% {
+        transform: translateY(-4px) scale(1.03);
+        filter: drop-shadow(0 0 20px rgba(0, 255, 209, 0.85)) drop-shadow(0 0 32px rgba(56, 189, 248, 0.5));
+    }
+}
+
+@keyframes radar-sweep-vertical {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+}
+
+@keyframes loader-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.loader-title {
+    margin-bottom: 12px;
+}
+
+.loader-title .brand-text {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #00FFD1 0%, #38BDF8 50%, #FFFFFF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: block;
+    line-height: 1.2;
+}
+
+.loader-title .tagline {
+    font-size: 9.5px;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.45);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-top: 4px;
+    display: block;
+}
+
+.loader-status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #00FFD1;
+    margin-bottom: 14px;
+}
+
+.loader-status-line .scan-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00FFD1;
+    animation: loader-pulse 1s infinite ease-in-out;
+}
+
+@keyframes loader-pulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.96); }
+    50% { opacity: 0.75; transform: scale(1.04); }
+}
+
+.loader-bar-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 14px;
+}
+
+.loader-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #00FFD1, #38BDF8);
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.loader-footer {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: 'Share Tech Mono', monospace;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOP NAVIGATION BAR
+   ═══════════════════════════════════════════════════════════════ */
+.app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: rgba(7, 9, 14, 0.85);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 1000;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.header-brand-logo {
+    height: 38px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(0, 255, 209, 0.45));
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease;
+}
+
+.header-brand-logo:hover {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 14px rgba(0, 255, 209, 0.75));
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-brand-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-brand-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    background: linear-gradient(135deg, #FFFFFF 30%, #00FFD1 85%, #00C6FF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.logo-chip {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(0, 245, 255, 0.12);
+    border: 1px solid rgba(0, 245, 255, 0.4);
+    color: var(--accent-cyan);
+    letter-spacing: 1px;
+}
+
+.logo-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.logo-sub strong.author {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.logo-sub strong.hayos-powered {
+    color: var(--primary-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* Center HUD Pill */
+.nav-center-hud {
+    display: flex;
+    align-items: center;
+}
+
+.hud-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(13, 18, 28, 0.7);
+    border: 1px solid rgba(0, 255, 209, 0.2);
+    border-radius: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+}
+
+.radar-blip {
+    width: 7px;
+    height: 7px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    animation: blipPulse 1.8s infinite;
+}
+
+@keyframes blipPulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 255, 209, 0.7); }
+    70% { box-shadow: 0 0 0 7px rgba(0, 255, 209, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 255, 209, 0); }
+}
+
+.hud-text {
+    color: var(--text-dim);
+    font-size: 11px;
+}
+
+.hud-divider {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.hud-value {
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+
+/* Nav Right Group */
+.nav-right-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.glass-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px;
+    background: rgba(13, 18, 28, 0.65);
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+}
+
+.live-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent-green);
+}
+
+.nav-glass-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(15, 22, 34, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+
+.nav-glass-btn:hover {
+    background: rgba(0, 255, 209, 0.12);
+    border-color: rgba(0, 255, 209, 0.4);
+    color: var(--primary-color);
+}
+
+.nav-glass-btn.primary-nav-btn {
+    background: rgba(0, 255, 209, 0.12);
+    border-color: rgba(0, 255, 209, 0.35);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.nav-glass-btn.primary-nav-btn:hover {
+    background: rgba(0, 255, 209, 0.22);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 14px rgba(0, 255, 209, 0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN CONTAINER & CYBERPUNK CHAMFERED CARDS
+   ═══════════════════════════════════════════════════════════════ */
+.main-wrapper {
+    position: relative;
+    z-index: 1;
+    margin-top: 60px;
+    padding: 20px 24px 40px;
+    max-width: 1700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.grid-dashboard {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+}
+
+.cyber-card {
+    background: var(--card-background);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-subtle);
+    padding: 18px 20px;
+    position: relative;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+    box-shadow: var(--glass-shadow);
+    transition: border-color 0.25s ease;
+}
+
+.cyber-card:hover {
+    border-color: rgba(0, 255, 209, 0.22);
+}
+
+.cyber-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+}
+
+.cyber-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-main);
+}
+
+.cyber-card-title i {
+    color: var(--primary-color);
+}
+
+.cyber-card-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9.5px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RADAR CANVAS & GEOLOCATION PERMISSION BANNER
+   ═══════════════════════════════════════════════════════════════ */
+.radar-stage {
+    position: relative;
+    height: 480px;
+    background: radial-gradient(circle at center, rgba(0, 255, 209, 0.03) 0%, rgba(4, 7, 12, 0.95) 75%);
+    border: 1px solid rgba(0, 255, 209, 0.15);
+    overflow: hidden;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+
+#radar-container, #map-container {
+    width: 100%;
+    height: 100%;
+}
+
+#radar-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: crosshair;
+}
+
+/* Tactical Location Web API Permission Banner */
+.gps-permission-banner {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    background: rgba(6, 10, 18, 0.92);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(0, 255, 209, 0.45);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.85);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 100;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    animation: banner-slide-down 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes banner-slide-down {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.gps-banner-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 255, 209, 0.12);
+    border: 1px solid rgba(0, 255, 209, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.gps-banner-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.gps-banner-title {
+    font-family: 'Outfit', 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.gps-banner-desc {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+.gps-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Tactical Controls Toolbar */
+.tactical-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.tactical-btn {
+    background: rgba(15, 22, 34, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.tactical-btn:hover {
+    background: rgba(0, 255, 209, 0.12);
+    border-color: rgba(0, 255, 209, 0.35);
+    color: var(--primary-color);
+}
+
+.tactical-btn.active {
+    background: rgba(0, 255, 209, 0.2);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(0, 255, 209, 0.2);
+}
+
+/* Cyber Leaflet Map Styles */
+.cyber-mode .leaflet-tile-pane {
+    opacity: 0.95;
+    background: #000 !important;
+}
+
+.cyber-mode .leaflet-container {
+    background: #06090F !important;
+    font-family: 'Share Tech Mono', monospace !important;
+}
+
+.cyber-mode .leaflet-control-layers {
+    background: rgba(10, 14, 24, 0.92) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid rgba(0, 255, 209, 0.3) !important;
+    border-radius: 4px !important;
+    color: #00FFD1 !important;
+    font-family: 'Share Tech Mono', monospace !important;
+    font-size: 11px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important;
+    padding: 6px 10px !important;
+}
+
+.cyber-mode .leaflet-control-layers-base label {
+    color: #E6F1FF !important;
+    cursor: pointer;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PINNED DEVICES CARD
+   ═══════════════════════════════════════════════════════════════ */
+.pin-list {
+    max-height: 380px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+}
+
+.pin-item {
+    padding: 10px 14px;
+    background: rgba(0, 255, 209, 0.02);
+    border: 1px solid rgba(0, 255, 209, 0.15);
+    border-left: 3px solid var(--accent-cyan);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: background 0.15s ease, border-color 0.2s ease;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
+}
+
+.pin-item:hover {
+    background: rgba(0, 255, 209, 0.05);
+}
+
+.pin-item .pe-addr {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    letter-spacing: 0.5px;
+}
+
+.pin-item .pe-name {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+.pin-item .pe-rssi-big {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 4px;
+}
+
+.pin-item .pe-dist-big {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+.pin-item .pe-sparkline {
+    margin-top: 6px;
+    display: block;
+    width: 100%;
+    height: 26px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.pe-close {
+    cursor: pointer;
+    color: var(--accent-red);
+    font-size: 14px;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+    padding: 2px 4px;
+}
+
+.pe-close:hover {
+    opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   IRK RESOLVER CARD
+   ═══════════════════════════════════════════════════════════════ */
+.irk-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.irk-input-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.irk-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.irk-input {
+    width: 100%;
+    background: rgba(0, 245, 255, 0.03);
+    border: 1px solid rgba(0, 245, 255, 0.2);
+    color: var(--primary-color);
+    padding: 9px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    border-radius: 4px;
+    transition: border-color 0.2s;
+}
+
+.irk-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 10px rgba(0, 255, 209, 0.2);
+}
+
+.irk-exec-btn {
+    background: rgba(0, 255, 209, 0.12);
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 9px 16px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.irk-exec-btn:hover {
+    background: rgba(0, 255, 209, 0.25);
+    box-shadow: 0 0 14px rgba(0, 255, 209, 0.3);
+}
+
+.irk-result-box {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    min-height: 48px;
+    color: var(--text-dim);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DETECTED BEACONS TABLE
+   ═══════════════════════════════════════════════════════════════ */
+.table-wrapper {
+    overflow-x: auto;
+    max-height: 440px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 255, 209, 0.3) rgba(0, 0, 0, 0.2);
+}
+
+.bt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+}
+
+.bt-table th {
+    text-align: left;
+    padding: 10px 12px;
+    color: var(--text-dim);
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(8, 12, 20, 0.95);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.bt-table td {
+    padding: 9px 12px;
+    color: var(--text-main);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.bt-table tr:hover td {
+    background: rgba(0, 255, 209, 0.04);
+}
+
+.action-icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 11px;
+    margin-right: 8px;
+    transition: transform 0.15s, color 0.15s;
+}
+
+.action-icon-btn:hover {
+    color: #fff;
+    transform: scale(1.15);
+}
+
+.action-icon-btn.pin-active {
+    color: var(--accent-magenta);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RADAR TOOLTIP
+   ═══════════════════════════════════════════════════════════════ */
+#radar-tooltip {
+    position: fixed;
+    z-index: 2000;
+    display: none;
+    pointer-events: none;
+    background: rgba(7, 10, 16, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 255, 209, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+    padding: 10px 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    color: var(--primary-color);
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+
+#radar-tooltip .lbl {
+    color: var(--text-dim);
+    margin-right: 6px;
+}
+
+#radar-tooltip .val {
+    color: #FFFFFF;
+    font-weight: bold;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BLUETOOTH SERVICE MODAL
+   ═══════════════════════════════════════════════════════════════ */
+.tactical-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.tactical-modal-backdrop.open {
+    display: flex;
+}
+
+.tactical-settings-modal {
+    width: 600px;
+    max-width: 95vw;
+    background: rgba(10, 14, 22, 0.96);
+    border: 1px solid rgba(0, 255, 209, 0.3);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    padding: 20px 24px;
+}
+
+.settings-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+.settings-modal-header h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.panel-close-btn:hover {
+    color: var(--accent-red);
+}
+    </style>
+</head>
+<body>
+
+    <!-- ═══ TACTICAL HUD LOADER (WIRETAPPER.PNG + CYBERPUNK ANIMATIONS) ═══ -->
+    <div id="wiretapper-loader" class="wiretapper-loader-overlay">
+        <div class="loader-container">
+            <div class="loader-emblem-wrap">
+                <div class="loader-radar-halo"></div>
+                <img src="/static/wiretapper.png" alt="WireTapper Emblem" class="loader-wiretapper-img">
+                <div class="loader-radar-scanner"></div>
+            </div>
+            <div class="loader-title">
+                <span class="brand-text">WireTapper</span>
+                <span class="tagline">TACTICAL BLUETOOTH LE RADAR</span>
+            </div>
+            <div class="loader-status-line">
+                <span class="scan-dot"></span>
+                <span id="loader-status-text">INITIALIZING BLUETOOTH SWEEP &amp; RPA RESOLVER...</span>
+            </div>
+            <div class="loader-bar-track">
+                <div class="loader-bar-fill" id="loader-bar-fill"></div>
+            </div>
+            <div class="loader-footer">
+                <span>SECURE LINK // 256-BIT ENCRYPTION</span>
+                <span>H9 · HayOS</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-grid"></div>
+
+    <!-- ═══ HEADER TOPBAR ═══ -->
+    <header class="app-header">
+        <div class="logo-section" onclick="window.location.href='/'" title="Return to WireTapper Main SIGINT Interface">
+            <img src="/static/wiretapper.png" alt="WireTapper Logo" class="header-brand-logo">
+            <div class="logo-text">
+                <div class="logo-brand-row">
+                    <span class="logo-brand-name">WireTapper</span>
+                    <span class="logo-chip">BT-RADAR</span>
+                </div>
+                <p class="logo-sub">Created by <strong class="author">H9</strong> · Powered by <strong class="hayos-powered"><svg class="eth-icon" viewBox="0 0 256 417" width="10" height="15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M127.961 0L125.166 9.5V285.168L127.961 287.958L255.923 212.32L127.961 0Z" fill="#00FFD1" fill-opacity="0.95"/><path d="M127.962 0L0 212.32L127.962 287.958V157.067V0Z" fill="#00FFD1" fill-opacity="0.75"/><path d="M127.961 312.187L126.386 314.106V413.605L127.961 417L256 236.586L127.961 312.187Z" fill="#00FFD1" fill-opacity="0.95"/><path d="M127.962 417V312.187L0 236.586L127.962 417Z" fill="#00FFD1" fill-opacity="0.75"/><path d="M127.961 287.958L255.923 212.32L127.961 157.067V287.958Z" fill="#00FFD1" fill-opacity="0.5"/><path d="M0 212.32L127.962 287.958V157.067L0 212.32Z" fill="#00FFD1" fill-opacity="0.35"/></svg>HayOS</strong></p>
+            </div>
+        </div>
+
+        <!-- Center Telemetry HUD -->
+        <div class="nav-center-hud">
+            <div class="hud-pill">
+                <span class="radar-blip"></span>
+                <span class="hud-text">Tactical Radar</span>
+                <span class="hud-divider">/</span>
+                <span class="hud-value" id="hud-status">BLE 2.4 GHz Sweep · RPA Resolver</span>
+            </div>
+        </div>
+
+        <!-- Right Group Controls -->
+        <div class="nav-right-group">
+            <!-- Active Nodes Badge -->
+            <div class="glass-badge" id="online-badge">
+                <span class="live-dot" id="s-dot"></span>
+                <span id="device-counts">Live: <strong id="s-unique-nav" style="color:var(--accent-cyan)">0</strong> Nodes</span>
+            </div>
+
+            <!-- Geolocation Web API Status Badge -->
+            <div class="glass-badge" id="gps-header-badge" onclick="requestGeolocationPermission()" style="cursor:pointer;" title="Click to Request or Refresh Browser Location Permission">
+                <span class="live-dot" id="gps-header-dot" style="background:#FFA502; box-shadow:0 0 8px #FFA502;"></span>
+                <span id="gps-header-text">GPS: PROMPT</span>
+            </div>
+
+            <!-- Audio Acoustic Ping Toggle -->
+            <button class="nav-glass-btn" id="btn-audio-toggle" title="Toggle Radar Acoustic Ping">
+                <i class="fas fa-volume-xmark" id="audio-icon"></i>
+                <span id="audio-text">Muted</span>
+            </button>
+
+            <!-- Daemon Subsystem Modal Button -->
+            <button class="nav-glass-btn" onclick="openBtServiceModal()" title="Inspect & Control Linux Bluetooth Daemon">
+                <i class="fab fa-bluetooth-b" style="color:var(--accent-cyan)"></i>
+                <span>Daemon</span>
+            </button>
+
+            <!-- SIGINT Map Return Button -->
+            <button class="nav-glass-btn primary-nav-btn" onclick="window.location.href='/'" title="Return to WireTapper Map & Signals">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>SIGINT Map</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ═══ MAIN DASHBOARD ═══ -->
+    <main class="main-wrapper">
+        <div class="grid-dashboard">
+
+            <!-- 1. LIVE TACTICAL RADAR CARD (Span 12) -->
+            <section class="cyber-card" style="grid-column: span 12;">
+                <div class="cyber-card-header">
+                    <div class="cyber-card-title">
+                        <i class="fab fa-bluetooth-b"></i> 2D Tactical Proximity Radar
+                    </div>
+                    <div class="tactical-toolbar">
+                        <button class="tactical-btn active" id="btn-view-radar"><i class="fas fa-crosshairs"></i> RADAR VIEW</button>
+                        <button class="tactical-btn" id="btn-view-map"><i class="fas fa-map-location-dot"></i> GPS MAP VIEW</button>
+                        <button class="tactical-btn active" id="btn-layer-hybrid" onclick="switchBtMapLayer('hybrid')" style="display:none;" title="Google Satellite Hybrid"><i class="fas fa-layer-group"></i> HYBRID</button>
+                        <button class="tactical-btn" id="btn-layer-sat" onclick="switchBtMapLayer('sat')" style="display:none;" title="Google Satellite"><i class="fas fa-satellite"></i> SATELLITE</button>
+                        <button class="tactical-btn" id="btn-layer-osm" onclick="switchBtMapLayer('osm')" style="display:none;" title="OpenStreetMap"><i class="fas fa-map"></i> OSM</button>
+                        <button class="tactical-btn" id="btn-map-zoomin" style="display:none;"><i class="fas fa-plus"></i></button>
+                        <button class="tactical-btn" id="btn-map-zoomout" style="display:none;"><i class="fas fa-minus"></i></button>
+                        <button class="tactical-btn" id="btn-map-fit" style="display:none;"><i class="fas fa-expand"></i> FIT</button>
+                        <button class="tactical-btn" id="btn-map-center" style="display:none;"><i class="fas fa-location-crosshairs"></i> CENTER</button>
+                        <button class="tactical-btn" id="btn-browser-gps" onclick="requestGeolocationPermission()" title="Request and Lock Browser Geolocation Web API Coordinates">
+                            <i class="fas fa-location-crosshairs" id="gps-btn-icon"></i> <span id="gps-btn-label">GPS: SYNC POSITION</span>
+                        </button>
+                        <button class="tactical-btn" id="btn-browser-ble" title="Scan Local BLE devices using Web Bluetooth"><i class="fab fa-bluetooth"></i> WEB BLE</button>
+                    </div>
+                </div>
+                <div class="cyber-card-sub">
+                    // [ADAPTER: hci0] // [BAND: 2.402 - 2.480 GHz] // [PATH-LOSS: FSPL ESTIMATION] // [RESOLVER: AES-128 ah()]
+                </div>
+                <div class="radar-stage">
+                    <!-- Tactical Geolocation Web API Permission Banner -->
+                    <div id="gps-permission-banner" class="gps-permission-banner" style="display:none;">
+                        <div class="gps-banner-icon"><i class="fas fa-location-crosshairs"></i></div>
+                        <div class="gps-banner-body">
+                            <div class="gps-banner-title" id="gps-banner-title">GEOLOCATION WEB API PERMISSION REQUIRED</div>
+                            <div class="gps-banner-desc" id="gps-banner-desc">
+                                WireTapper uses the browser Geolocation Web API to lock scanner coordinates, orient Leaflet radar maps, and plot distance vectors for detected BLE beacons.
+                            </div>
+                        </div>
+                        <div class="gps-banner-actions">
+                            <button class="tactical-btn active" id="btn-banner-grant-gps" onclick="requestGeolocationPermission()">
+                                <i class="fas fa-satellite"></i> AUTHORIZE LOCATION
+                            </button>
+                            <button class="tactical-btn" onclick="dismissGpsBanner()" title="Dismiss Banner">
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="radar-container">
+                        <canvas id="radar-canvas"></canvas>
+                    </div>
+                    <div id="map-container" class="cyber-mode" style="display:none;">
+                        <div id="map" style="width:100%; height:100%;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. TRACKED BEACONS / PINNED NODES CARD (Span 6) -->
+            <section class="cyber-card" style="grid-column: span 6;">
+                <div class="cyber-card-header">
+                    <div class="cyber-card-title">
+                        <i class="fas fa-thumbtack" style="color:var(--accent-magenta);"></i> Tracked Beacons
+                    </div>
+                    <span id="pinned-count-badge" class="logo-chip" style="color:var(--accent-magenta); border-color:var(--accent-magenta);">0 PINNED</span>
+                </div>
+                <div class="cyber-card-sub">// [TELEMETRY BUFFER &amp; PROXIMITY TRENDS]</div>
+                <div class="pin-list" id="pinned-scroll">
+                    <div style="color:var(--text-dim); font-size:11px; padding:20px; text-align:center; font-family:'Share Tech Mono', monospace;">
+                        No tracked nodes. Pin any beacon from the table below to monitor live RSSI drift.
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. AES-128 IRK RPA RESOLVER CARD (Span 6) -->
+            <section class="cyber-card" style="grid-column: span 6;">
+                <div class="cyber-card-header">
+                    <div class="cyber-card-title">
+                        <i class="fas fa-key" style="color:var(--accent-yellow);"></i> AES-128 IRK RPA Resolver
+                    </div>
+                    <span class="logo-chip">VOL 3 PART H</span>
+                </div>
+                <div class="cyber-card-sub">// [RESOLVE DYNAMIC MAC ADDRESSES AGAINST IDENTITY RESOLVING KEY]</div>
+                <div class="irk-container">
+                    <div class="irk-input-group">
+                        <div>
+                            <label class="irk-label" for="irk-input">Identity Resolving Key (IRK - 32 Hex)</label>
+                            <input class="irk-input" id="irk-input" type="text" placeholder="e.g. 0102030405060708090a0b0c0d0e0f10">
+                        </div>
+                        <div>
+                            <label class="irk-label" for="mac-input">Target MAC Address</label>
+                            <input class="irk-input" id="mac-input" type="text" placeholder="e.g. 4C:32:01:A8:99:12">
+                        </div>
+                    </div>
+                    <button class="irk-exec-btn" id="irk-run-btn">
+                        <i class="fas fa-fingerprint"></i> Execute AES-128 ah() Resolution
+                    </button>
+                    <div class="irk-result-box" id="irk-result">
+                        Enter a 128-bit Identity Resolving Key (IRK) and target BLE MAC to verify RPA cryptographic identity.
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. DETECTED BEACON LOG CARD (Span 12) -->
+            <section class="cyber-card" style="grid-column: span 12;">
+                <div class="cyber-card-header">
+                    <div class="cyber-card-title">
+                        <i class="fas fa-satellite-dish"></i> Active Bluetooth LE Nodes
+                    </div>
+                    <div style="font-family:'Share Tech Mono', monospace; font-size:12px; color:var(--accent-cyan);">
+                        Total Intercepts: <strong id="s-total">0</strong>
+                    </div>
+                </div>
+                <div class="cyber-card-sub">
+                    // [UNIQUE DETECTIONS: <span id="s-unique" style="color:#00FF88;">0</span>] // [ELAPSED: <span id="s-elapsed">00:00</span>]
+                </div>
+                <div class="table-wrapper">
+                    <table class="bt-table">
+                        <thead>
+                            <tr>
+                                <th>MAC ADDRESS</th>
+                                <th>DEVICE NAME</th>
+                                <th>AVG RSSI</th>
+                                <th>EST DISTANCE</th>
+                                <th>ADDRESS TYPE</th>
+                                <th>PACKETS</th>
+                                <th>LAST SEEN</th>
+                                <th>INTERACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devices-tbody">
+                            <tr>
+                                <td colspan="8" style="text-align:center; color:var(--text-dim); padding:24px;">
+                                    BLE sweep active. Listening for advertisement packets...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Radar Mouse Tooltip -->
+    <div id="radar-tooltip"></div>
+
+    <!-- ═══ BLUETOOTH SERVICE MODAL ═══ -->
+    <div class="tactical-modal-backdrop" id="bt-service-modal-backdrop" onclick="onServiceModalBackdrop(event)">
+        <div class="tactical-settings-modal">
+            <div class="settings-modal-header">
+                <h3><i class="fab fa-bluetooth-b" style="color:var(--accent-cyan);"></i> Host Bluetooth Subsystem Control</h3>
+                <button class="panel-close-btn" onclick="closeBtServiceModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div style="font-size:12px; line-height:1.6; color:var(--text-main);">
+                <div style="padding:12px; background:rgba(0,245,255,0.05); border:1px solid rgba(0,245,255,0.2); border-radius:6px; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-weight:700; color:var(--accent-cyan); font-size:13px;"><i class="fab fa-linux"></i> <span id="m-os-name">Detecting OS...</span></span>
+                        <span id="m-service-badge" style="padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; background:rgba(255,50,50,0.2); color:#ff5555; border:1px solid rgba(255,50,50,0.4);">CHECKING</span>
+                    </div>
+                    <div style="font-family:'Share Tech Mono', monospace; font-size:11px; color:var(--text-dim);">
+                        <div>Adapter: <span id="m-adapter-status" style="color:var(--text-main);">hci0 (Checking...)</span></div>
+                        <div>Kernel: <span id="m-kernel-ver">...</span></div>
+                        <div id="m-rfkill-status" style="margin-top:4px;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-family:'Share Tech Mono', monospace; font-size:10px; color:var(--text-dim); text-transform:uppercase; display:block; margin-bottom:4px;">
+                        Sudo Password (Required for Kali Linux Systemctl)
+                    </label>
+                    <input class="irk-input" type="password" id="m-sudo-pass" placeholder="Enter sudo password if prompted...">
+                    <p style="font-size:10px; color:var(--text-dim); margin-top:4px;">Executes <code>rfkill unblock bluetooth &amp;&amp; systemctl start bluetooth &amp;&amp; hciconfig hci0 up</code></p>
+                </div>
+
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="tactical-btn" onclick="executeDaemonAction('start')" style="color:var(--accent-green); border-color:rgba(0,255,136,0.4);"><i class="fas fa-play"></i> Start Daemon</button>
+                    <button class="tactical-btn" onclick="executeDaemonAction('restart')" style="color:var(--accent-cyan); border-color:rgba(0,245,255,0.4);"><i class="fas fa-arrows-rotate"></i> Restart</button>
+                    <button class="tactical-btn" onclick="executeDaemonAction('stop')" style="color:var(--accent-red); border-color:rgba(239,68,68,0.4);"><i class="fas fa-stop"></i> Stop</button>
+                    <button class="tactical-btn" onclick="loadDaemonStatus()" style="margin-left:auto;"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+
+                <div id="m-action-console" style="margin-top:12px; display:none; padding:10px; background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.1); border-radius:4px; font-family:'Share Tech Mono', monospace; font-size:10px; white-space:pre-wrap; max-height:120px; overflow-y:auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ BLUETOOTH RADAR SCRIPT ═══ -->
+    <script>
+    (function(){
+    "use strict";
+
+    /* ================================================================
+       Loader Controller
+       ================================================================ */
+    function initLoader(){
+        var overlay = document.getElementById('wiretapper-loader');
+        var fill = document.getElementById('loader-bar-fill');
+        var status = document.getElementById('loader-status-text');
+        if(!overlay) return;
+        var p = 0;
+        var interval = setInterval(function(){
+            p += Math.floor(Math.random() * 25) + 15;
+            if(p >= 100){
+                p = 100;
+                clearInterval(interval);
+                if(fill) fill.style.width = '100%';
+                if(status) status.textContent = 'BLUETOOTH TACTICAL RADAR ACTIVE';
+                setTimeout(function(){
+                    overlay.classList.add('hidden');
+                }, 400);
+            } else {
+                if(fill) fill.style.width = p + '%';
+                if(status){
+                    if(p > 60) status.textContent = 'CALIBRATING PATH LOSS & RANGE RINGS...';
+                    else if(p > 30) status.textContent = 'INITIALIZING hci0 ADAPTER SWEEP...';
+                }
+            }
+        }, 120);
+    }
+    document.addEventListener("DOMContentLoaded", initLoader);
+    setTimeout(initLoader, 100);
+
+    /* ================================================================
+       State Variables
+       ================================================================ */
+    var devices = {};         // address -> device obj
+    var hoveredAddr = null;
+    var pinnedAddrs = {};     // address -> true
+    var scannerGPS = null;
+    var hasGPS = false;
+    var gpsWatchId = null;
+    var gpsAccuracyCircle = null;
+
+    /* ================================================================
+       Geolocation Web API Permission Engine
+       ================================================================ */
+    function checkLocationPermissionState(){
+        if(navigator.permissions && navigator.permissions.query){
+            navigator.permissions.query({ name: 'geolocation' })
+            .then(function(result){
+                updateGpsPermissionUI(result.state);
+                result.onchange = function(){
+                    updateGpsPermissionUI(result.state);
+                    if(result.state === 'granted') startGpsTracking();
+                };
+                if(result.state === 'granted'){
+                    startGpsTracking();
+                } else if(result.state === 'prompt'){
+                    showGpsBanner();
+                }
+            })
+            .catch(function(){
+                showGpsBanner();
+            });
+        } else {
+            showGpsBanner();
+        }
+    }
+
+    function updateGpsPermissionUI(state){
+        var badgeDot = document.getElementById('gps-header-dot');
+        var badgeText = document.getElementById('gps-header-text');
+        var btnLabel = document.getElementById('gps-btn-label');
+        var banner = document.getElementById('gps-permission-banner');
+
+        if(state === 'granted'){
+            if(badgeDot){ badgeDot.style.background = '#00FF88'; badgeDot.style.boxShadow = '0 0 8px #00FF88'; }
+            if(badgeText) badgeText.textContent = 'GPS: GRANTED';
+            if(btnLabel) btnLabel.textContent = 'GPS: TRACKING';
+            if(banner) banner.style.display = 'none';
+        } else if(state === 'denied'){
+            if(badgeDot){ badgeDot.style.background = '#EF4444'; badgeDot.style.boxShadow = '0 0 8px #EF4444'; }
+            if(badgeText) badgeText.textContent = 'GPS: BLOCKED';
+            if(btnLabel) btnLabel.textContent = 'GPS: BLOCKED';
+            if(banner){
+                banner.style.display = 'flex';
+                var title = document.getElementById('gps-banner-title');
+                var desc = document.getElementById('gps-banner-desc');
+                var grantBtn = document.getElementById('btn-banner-grant-gps');
+                if(title) title.textContent = 'LOCATION PERMISSION BLOCKED IN BROWSER';
+                if(desc) desc.textContent = 'Geolocation was denied. Please allow Location access in your browser address bar/site settings to enable GPS mapping.';
+                if(grantBtn) grantBtn.style.display = 'none';
+            }
+        } else {
+            if(badgeDot){ badgeDot.style.background = '#FFA502'; badgeDot.style.boxShadow = '0 0 8px #FFA502'; }
+            if(badgeText) badgeText.textContent = 'GPS: PROMPT';
+            if(btnLabel) btnLabel.textContent = 'GPS: SYNC POSITION';
+        }
+    }
+
+    function showGpsBanner(){
+        var banner = document.getElementById('gps-permission-banner');
+        if(banner && !hasGPS) banner.style.display = 'flex';
+    }
+
+    window.dismissGpsBanner = function(){
+        var banner = document.getElementById('gps-permission-banner');
+        if(banner) banner.style.display = 'none';
+    };
+
+    window.requestGeolocationPermission = function(){
+        if(!navigator.geolocation){
+            alert("Geolocation Web API is not supported by your browser.");
+            return;
+        }
+
+        var btnLabel = document.getElementById('gps-btn-label');
+        if(btnLabel) btnLabel.textContent = "GPS: ACQUIRING...";
+
+        navigator.geolocation.getCurrentPosition(
+            function(pos){
+                onGpsSuccess(pos);
+                startGpsTracking();
+            },
+            function(err){
+                onGpsError(err);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    };
+
+    function startGpsTracking(){
+        if(gpsWatchId !== null || !navigator.geolocation) return;
+        gpsWatchId = navigator.geolocation.watchPosition(
+            onGpsSuccess,
+            onGpsError,
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+        );
+    }
+
+    function onGpsSuccess(pos){
+        var lat = pos.coords.latitude;
+        var lon = pos.coords.longitude;
+        var acc = pos.coords.accuracy || 10;
+
+        hasGPS = true;
+        scannerGPS = { lat: lat, lon: lon, accuracy: acc };
+
+        updateGpsPermissionUI('granted');
+
+        var hudStatus = document.getElementById('hud-status');
+        if(hudStatus){
+            hudStatus.innerHTML = `GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)} <span style="color:#00FF88;">(±${Math.round(acc)}m)</span> · BLE Passive Sweep`;
+        }
+
+        var btnLabel = document.getElementById('gps-btn-label');
+        if(btnLabel) btnLabel.textContent = `GPS: ${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+
+        // Update Scanner Position on Leaflet
+        updateScannerPos(lat, lon, false, acc);
+    }
+
+    function onGpsError(err){
+        console.warn("[GPS] Geolocation Web API error:", err);
+        if(err.code === 1){
+            updateGpsPermissionUI('denied');
+        } else {
+            var btnLabel = document.getElementById('gps-btn-label');
+            if(btnLabel) btnLabel.textContent = 'GPS: RETRY SYNC';
+        }
+    }
+
+    // Auto-check on initialization
+    setTimeout(checkLocationPermissionState, 600);
+
+    /* ================================================================
+       Radar Render Module
+       ================================================================ */
+    var rCanvas = document.getElementById("radar-canvas");
+    var rCtx    = rCanvas.getContext("2d");
+    var sweepAngle = 0;
+    var SWEEP_PERIOD = 4000;
+    var RINGS = [1, 5, 10, 20];
+    var MAX_RING = 20;
+    var pingRipples = [];
+    var particles = [];
+    var PARTICLE_MAX = 150;
+
+    function spawnParticles(x, y, color, count){
+        for(var i=0; i<count && particles.length<PARTICLE_MAX; i++){
+            var angle = Math.random() * Math.PI * 2;
+            var speed = 0.3 + Math.random() * 1.2;
+            particles.push({
+                x: x, y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                color: color,
+                born: Date.now(),
+                life: 400 + Math.random() * 400,
+                size: 1 + Math.random() * 1.5
+            });
+        }
+    }
+
+    function drawParticles(dpr){
+        var now = Date.now();
+        for(var i=particles.length-1; i>=0; i--){
+            var p = particles[i];
+            var age = now - p.born;
+            if(age > p.life){ particles.splice(i, 1); continue; }
+            var progress = age / p.life;
+            var alpha = (1 - progress) * 0.5;
+            var sz = p.size * (1 - progress * 0.5) * dpr;
+            p.x += p.vx; p.y += p.vy;
+            p.vx *= 0.97; p.vy *= 0.97;
+            rCtx.beginPath();
+            rCtx.arc(p.x, p.y, sz, 0, Math.PI * 2);
+            rCtx.fillStyle = hexToRgba(p.color, alpha);
+            rCtx.fill();
+        }
+    }
+
+    function resizeCanvas(){
+        var wrap = document.getElementById("radar-container");
+        if(!wrap) return;
+        var dpr = window.devicePixelRatio || 1;
+        var newW = Math.floor(wrap.clientWidth * dpr);
+        var newH = Math.floor(wrap.clientHeight * dpr);
+        if(rCanvas.width === newW && rCanvas.height === newH) return;
+        rCanvas.width  = newW;
+        rCanvas.height = newH;
+        rCanvas.style.width  = wrap.clientWidth  + "px";
+        rCanvas.style.height = wrap.clientHeight + "px";
+    }
+    window.addEventListener("resize", resizeCanvas);
+    setTimeout(resizeCanvas, 50);
+
+    function hashAddr(addr){
+        var h = 0;
+        for(var i=0; i<addr.length; i++){ h = ((h << 5) - h) + addr.charCodeAt(i); h |= 0; }
+        return h < 0 ? -h : h;
+    }
+
+    function hashAddr2(addr){
+        var h = 5381;
+        for(var i=0; i<addr.length; i++){ h = ((h << 5) + h) ^ addr.charCodeAt(i); h |= 0; }
+        return h < 0 ? -h : h;
+    }
+
+    function distToRadius(d, maxR){
+        if(d == null || d === "" || d <= 0) return maxR * 0.85;
+        var clamped = Math.min(d, MAX_RING);
+        return (Math.log(clamped + 1) / Math.log(MAX_RING + 1)) * maxR;
+    }
+
+    function dotColor(d){
+        if(d != null && d !== "" && d > 0){
+            if(d < 5) return "#00FF88";
+            if(d <= 15) return "#FFD600";
+            return "#EF4444";
+        }
+        return "#7E8FA4";
+    }
+
+    function colorFromRssiOrDist(dev){
+        var dist = dev.est_distance;
+        if(dist != null && dist !== "" && dist > 0) return dotColor(dist);
+        var rssi = dev.rssi;
+        if(rssi == null) return "#7E8FA4";
+        if(rssi >= -60) return "#00FF88";
+        if(rssi >= -80) return "#FFD600";
+        return "#EF4444";
+    }
+
+    function hexToRgba(hex, a){
+        if(!hex || hex.length < 7) return "rgba(0,255,209," + a + ")";
+        var r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
+        return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+    }
+
+    function drawRadar(ts){
+        var dpr = window.devicePixelRatio || 1;
+        var W = rCanvas.width, H = rCanvas.height;
+        if(W === 0 || H === 0){ requestAnimationFrame(drawRadar); return; }
+        var cx = W / 2, cy = H / 2;
+        var maxR = Math.min(cx, cy) * 0.88;
+
+        rCtx.clearRect(0, 0, W, H);
+
+        // Crosshairs
+        rCtx.strokeStyle = "rgba(0, 255, 209, 0.08)";
+        rCtx.lineWidth = 1 * dpr;
+        rCtx.beginPath(); rCtx.moveTo(cx, cy - maxR); rCtx.lineTo(cx, cy + maxR); rCtx.stroke();
+        rCtx.beginPath(); rCtx.moveTo(cx - maxR, cy); rCtx.lineTo(cx + maxR, cy); rCtx.stroke();
+        var d45 = maxR * 0.707;
+        rCtx.beginPath(); rCtx.moveTo(cx - d45, cy - d45); rCtx.lineTo(cx + d45, cy + d45); rCtx.stroke();
+        rCtx.beginPath(); rCtx.moveTo(cx + d45, cy - d45); rCtx.lineTo(cx - d45, cy + d45); rCtx.stroke();
+
+        // Concentric Distance Rings
+        for(var ri=0; ri<RINGS.length; ri++){
+            var r = (Math.log(RINGS[ri] + 1) / Math.log(MAX_RING + 1)) * maxR;
+            rCtx.beginPath(); rCtx.arc(cx, cy, r, 0, Math.PI * 2);
+            rCtx.strokeStyle = "rgba(0, 255, 209, 0.08)"; rCtx.lineWidth = 2 * dpr; rCtx.stroke();
+            rCtx.beginPath(); rCtx.arc(cx, cy, r, 0, Math.PI * 2);
+            rCtx.strokeStyle = "rgba(0, 255, 209, 0.18)"; rCtx.lineWidth = 1 * dpr; rCtx.stroke();
+            rCtx.fillStyle = "rgba(0, 255, 209, 0.45)"; rCtx.font = (9 * dpr) + "px 'Share Tech Mono', monospace";
+            rCtx.fillText(RINGS[ri] + "m", cx + r + 4 * dpr, cy - 4 * dpr);
+            rCtx.fillText(RINGS[ri] + "m", cx + 4 * dpr, cy - r - 4 * dpr);
+        }
+
+        // Radar Sweep Cone
+        sweepAngle = ((ts % SWEEP_PERIOD) / SWEEP_PERIOD) * Math.PI * 2;
+        if(rCtx.createConicGradient){
+            var trailLen = Math.PI * 0.35;
+            var grad = rCtx.createConicGradient(sweepAngle - trailLen, cx, cy);
+            grad.addColorStop(0, "rgba(0, 255, 209, 0)");
+            grad.addColorStop(0.6, "rgba(0, 255, 209, 0.04)");
+            grad.addColorStop(1, "rgba(0, 255, 209, 0.18)");
+            rCtx.beginPath(); rCtx.moveTo(cx, cy);
+            rCtx.arc(cx, cy, maxR, sweepAngle - trailLen, sweepAngle);
+            rCtx.closePath(); rCtx.fillStyle = grad; rCtx.fill();
+        }
+
+        // Sweep Arm Line
+        var sx = cx + Math.cos(sweepAngle) * maxR, sy = cy + Math.sin(sweepAngle) * maxR;
+        rCtx.beginPath(); rCtx.moveTo(cx, cy); rCtx.lineTo(sx, sy);
+        rCtx.strokeStyle = "rgba(0, 255, 209, 0.85)"; rCtx.lineWidth = 1.5 * dpr; rCtx.stroke();
+        rCtx.beginPath(); rCtx.arc(sx, sy, 2.5 * dpr, 0, Math.PI * 2);
+        rCtx.fillStyle = "#00FFD1"; rCtx.fill();
+
+        // Center Host Marker
+        var cPulse = 1 + 0.12 * Math.sin(ts / 450);
+        rCtx.beginPath(); rCtx.arc(cx, cy, 5 * dpr * cPulse, 0, Math.PI * 2);
+        rCtx.strokeStyle = "rgba(0, 255, 209, 0.3)"; rCtx.lineWidth = 1 * dpr; rCtx.stroke();
+        rCtx.beginPath(); rCtx.arc(cx, cy, 2 * dpr, 0, Math.PI * 2);
+        rCtx.fillStyle = "#00FFD1"; rCtx.fill();
+        rCtx.font = "bold " + (9 * dpr) + "px 'Share Tech Mono', monospace";
+        rCtx.fillStyle = "#00FFD1";
+        rCtx.fillText("YOU", cx + 7 * dpr, cy + 3 * dpr);
+
+        // Ping Ripples
+        var now = Date.now();
+        for(var pi = pingRipples.length - 1; pi >= 0; pi--){
+            var p = pingRipples[pi];
+            var age = now - p.born;
+            if(age > 1200){ pingRipples.splice(pi, 1); continue; }
+            var progress = age / 1200;
+            var pr = p.r + (p.maxR - p.r) * progress;
+            var pa = (1 - progress) * 0.4;
+            rCtx.beginPath(); rCtx.arc(p.cx, p.cy, pr, 0, Math.PI * 2);
+            rCtx.strokeStyle = hexToRgba(p.color, pa);
+            rCtx.lineWidth = 1.5 * dpr; rCtx.stroke();
+        }
+
+        drawParticles(dpr);
+
+        // Plot Detected Beacons
+        var addrs = Object.keys(devices);
+        for(var i=0; i<addrs.length; i++){
+            var dev = devices[addrs[i]];
+            var angle = (hashAddr(dev.address) % 3600) / 3600 * Math.PI * 2;
+            var dist = dev.est_distance;
+            var r2 = distToRadius(dist, maxR);
+            var jitter = ((hashAddr2(dev.address) % 100) - 50) / 50 * 5 * dpr;
+            r2 = Math.max(4 * dpr, Math.min(r2 + jitter, maxR));
+            var dx = cx + Math.cos(angle) * r2;
+            var dy = cy + Math.sin(angle) * r2;
+
+            if(dev._rx !== undefined){
+                var moveDist = Math.sqrt((dx - dev._rx) * (dx - dev._rx) + (dy - dev._ry) * (dy - dev._ry));
+                if(moveDist > 3 * dpr){ spawnParticles(dev._rx, dev._ry, colorFromRssiOrDist(dev), 2); }
+            }
+            dev._rx = dx; dev._ry = dy;
+
+            var col = colorFromRssiOrDist(dev);
+            var baseSize = 4 * dpr;
+            var age2 = now - (dev._updateTs || 0);
+            var pulse = age2 < 1500 ? 1 + 0.4 * (1 - age2 / 1500) : 1;
+            if(hoveredAddr === dev.address) pulse = Math.max(pulse, 1.6);
+            var sz = baseSize * pulse;
+
+            // Halo & Blip
+            rCtx.beginPath(); rCtx.arc(dx, dy, sz + 4 * dpr, 0, Math.PI * 2);
+            rCtx.fillStyle = hexToRgba(col, 0.08); rCtx.fill();
+            rCtx.beginPath(); rCtx.arc(dx, dy, sz + 2 * dpr, 0, Math.PI * 2);
+            rCtx.fillStyle = hexToRgba(col, 0.2); rCtx.fill();
+            rCtx.beginPath(); rCtx.arc(dx, dy, sz, 0, Math.PI * 2);
+            rCtx.fillStyle = col; rCtx.fill();
+
+            // Link line to center
+            rCtx.beginPath(); rCtx.moveTo(cx, cy); rCtx.lineTo(dx, dy);
+            rCtx.strokeStyle = hexToRgba(col, 0.06);
+            rCtx.lineWidth = 1 * dpr; rCtx.stroke();
+
+            // Label
+            if(pulse > 1.25 || hoveredAddr === dev.address){
+                rCtx.fillStyle = "#FFFFFF";
+                rCtx.font = (9 * dpr) + "px 'Share Tech Mono', monospace";
+                var lbl = dev.name && dev.name !== "Unknown" ? dev.name.substring(0, 14) : dev.address.substring(0, 8);
+                rCtx.fillText(lbl, dx + sz + 5 * dpr, dy + 3 * dpr);
+            }
+        }
+
+        requestAnimationFrame(drawRadar);
+    }
+
+    function spawnPing(dev, cx, cy, maxR){
+        var angle = (hashAddr(dev.address) % 3600) / 3600 * Math.PI * 2;
+        var dist = dev.est_distance;
+        var r2 = distToRadius(dist, maxR);
+        var dpr = window.devicePixelRatio || 1;
+        pingRipples.push({
+            cx: cx + Math.cos(angle) * r2,
+            cy: cy + Math.sin(angle) * r2,
+            r: 3 * dpr, maxR: 20 * dpr,
+            color: colorFromRssiOrDist(dev),
+            born: Date.now()
+        });
+    }
+
+    requestAnimationFrame(drawRadar);
+
+    /* ── Tooltip handlers ── */
+    rCanvas.addEventListener("mousemove", function(e){
+        var rect = rCanvas.getBoundingClientRect();
+        var dpr = window.devicePixelRatio || 1;
+        var mx = (e.clientX - rect.left) * dpr;
+        var my = (e.clientY - rect.top) * dpr;
+        var hit = null;
+        var addrs = Object.keys(devices);
+        for(var i=0; i<addrs.length; i++){
+            var d = devices[addrs[i]];
+            if(d._rx === undefined) continue;
+            var dx = d._rx - mx, dy = d._ry - my;
+            if(Math.sqrt(dx * dx + dy * dy) < 12 * dpr){ hit = d; break; }
+        }
+        if(hit){ hoveredAddr = hit.address; showTooltip(hit, e.clientX, e.clientY); }
+        else { hoveredAddr = null; hideTooltip(); }
+    });
+
+    rCanvas.addEventListener("mouseleave", function(){
+        hoveredAddr = null; hideTooltip();
+    });
+
+    /* ================================================================
+       Leaflet GPS Map Implementation
+       ================================================================ */
+    var map = null;
+    var scannerMarker = null;
+    var devMarkers = {};
+    var btTileLayers = {};
+    var activeBtLayer = 'hybrid';
+
+    function initMap(){
+        if(map) return;
+        map = L.map("map", {
+            zoomControl: false,
+            scrollWheelZoom: true,
+            smoothWheelZoom: true,
+            doubleClickZoom: true,
+            dragging: true,
+        }).setView([0, 0], 16);
+
+        // 1. Google Satellite Hybrid Layer (Satellite + Roads/Borders/Labels)
+        var googleHybridLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '© Google Maps'
+        });
+
+        // 2. Google Satellite Layer (Pure Satellite Imagery)
+        var googleSatLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '© Google Maps'
+        });
+
+        // 3. OpenStreetMap Layer
+        var osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19,
+            minZoom: 1
+        });
+
+        btTileLayers = {
+            'hybrid': googleHybridLayer,
+            'sat': googleSatLayer,
+            'osm': osmLayer
+        };
+
+        var baseLayers = {
+            "Google Satellite Hybrid": googleHybridLayer,
+            "Google Satellite": googleSatLayer,
+            "OpenStreetMap": osmLayer
+        };
+
+        L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
+        googleHybridLayer.addTo(map);
+        activeBtLayer = 'hybrid';
+
+        map.on('baselayerchange', function(e){
+            if(e.layer === googleHybridLayer) updateActiveLayerBtn('hybrid');
+            else if(e.layer === googleSatLayer) updateActiveLayerBtn('sat');
+            else if(e.layer === osmLayer) updateActiveLayerBtn('osm');
+        });
+    }
+
+    function updateActiveLayerBtn(name){
+        activeBtLayer = name;
+        ['btn-layer-hybrid', 'btn-layer-sat', 'btn-layer-osm'].forEach(function(id){
+            var el = document.getElementById(id);
+            if(el) el.classList.remove('active');
+        });
+        var activeBtn = document.getElementById('btn-layer-' + name);
+        if(activeBtn) activeBtn.classList.add('active');
+    }
+
+    function switchBtMapLayer(name){
+        if(!map) initMap();
+        if(!btTileLayers[name]) return;
+        for(var key in btTileLayers){
+            if(map.hasLayer(btTileLayers[key])){
+                map.removeLayer(btTileLayers[key]);
+            }
+        }
+        btTileLayers[name].addTo(map);
+        updateActiveLayerBtn(name);
+    }
+
+    function updateScannerPos(lat, lon, autoCenter, accuracy){
+        if(!map) initMap();
+        var ll = [lat, lon];
+        if(!scannerMarker){
+            scannerMarker = L.circleMarker(ll, {
+                radius: 8,
+                color: "#00F5FF",
+                fillColor: "#00F5FF",
+                fillOpacity: 0.9,
+                weight: 2
+            }).addTo(map);
+            scannerMarker.bindPopup("<b>hci0 Scanner Position</b><br>Lat: " + lat.toFixed(5) + "<br>Lon: " + lon.toFixed(5) + (accuracy ? "<br>Accuracy: ±" + Math.round(accuracy) + "m" : ""));
+            map.setView(ll, 16);
+        } else {
+            scannerMarker.setLatLng(ll);
+            if(autoCenter) map.panTo(ll);
+        }
+
+        if(accuracy && accuracy > 0){
+            if(!gpsAccuracyCircle){
+                gpsAccuracyCircle = L.circle(ll, {
+                    radius: accuracy,
+                    color: "#00F5FF",
+                    fillColor: "#00F5FF",
+                    fillOpacity: 0.08,
+                    weight: 1,
+                    dashArray: "4, 4"
+                }).addTo(map);
+            } else {
+                gpsAccuracyCircle.setLatLng(ll);
+                gpsAccuracyCircle.setRadius(accuracy);
+            }
+        }
+    }
+
+    function updateDevMarker(dev){
+        var gps = dev.best_gps;
+        if(!gps || !gps.lat || !gps.lon) return;
+        if(!map) initMap();
+        var ll = [gps.lat, gps.lon];
+        var col = colorFromRssiOrDist(dev);
+        if(devMarkers[dev.address]){
+            devMarkers[dev.address].setLatLng(ll);
+            devMarkers[dev.address].setStyle({color: col, fillColor: col});
+        } else {
+            var m = L.circleMarker(ll, {
+                radius: 6, color: col, fillColor: col, fillOpacity: 0.8, weight: 1
+            }).addTo(map);
+            m.bindPopup("<b>" + esc(dev.name || "Unknown") + "</b><br>" + esc(dev.address) + "<br>RSSI: " + dev.rssi + " dBm");
+            devMarkers[dev.address] = m;
+        }
+    }
+
+    function fitAllMapMarkers() {
+        if(!map) return;
+        var group = [];
+        if(scannerMarker) group.push(scannerMarker.getLatLng());
+        for(var addr in devMarkers){
+            if(devMarkers[addr]) group.push(devMarkers[addr].getLatLng());
+        }
+        if(group.length > 1){
+            map.fitBounds(L.latLngBounds(group), { padding: [40, 40], maxZoom: 18 });
+        } else if(group.length === 1){
+            map.setView(group[0], map.getZoom() || 16);
+        }
+    }
+
+    function showMap(){
+        document.getElementById("map-container").style.display = 'block';
+        document.getElementById("radar-container").style.display = 'none';
+        ['btn-map-zoomin', 'btn-map-zoomout', 'btn-map-fit', 'btn-map-center', 'btn-layer-hybrid', 'btn-layer-sat', 'btn-layer-osm'].forEach(function(id){
+            var el = document.getElementById(id);
+            if(el) el.style.display = 'inline-flex';
+        });
+        initMap();
+        if(map){
+            setTimeout(function(){ map.invalidateSize(); }, 150);
+        }
+    }
+
+    document.getElementById('btn-view-map').addEventListener('click', function(){
+        document.getElementById('btn-view-radar').classList.remove('active');
+        this.classList.add('active');
+        showMap();
+    });
+
+    document.getElementById('btn-view-radar').addEventListener('click', function(){
+        document.getElementById('btn-view-map').classList.remove('active');
+        this.classList.add('active');
+        document.getElementById('map-container').style.display = 'none';
+        document.getElementById('radar-container').style.display = 'block';
+        ['btn-map-zoomin', 'btn-map-zoomout', 'btn-map-fit', 'btn-map-center', 'btn-layer-hybrid', 'btn-layer-sat', 'btn-layer-osm'].forEach(function(id){
+            var el = document.getElementById(id);
+            if(el) el.style.display = 'none';
+        });
+        resizeCanvas();
+    });
+
+    document.getElementById('btn-map-zoomin').addEventListener('click', function(){ if(map) map.zoomIn(); });
+    document.getElementById('btn-map-zoomout').addEventListener('click', function(){ if(map) map.zoomOut(); });
+    document.getElementById('btn-map-fit').addEventListener('click', fitAllMapMarkers);
+    document.getElementById('btn-map-center').addEventListener('click', function(){
+        if(scannerGPS && scannerGPS.lat){ updateScannerPos(scannerGPS.lat, scannerGPS.lon, true, scannerGPS.accuracy); }
+        else if(scannerMarker){ map.panTo(scannerMarker.getLatLng()); }
+    });
+
+    document.getElementById('btn-browser-ble').addEventListener('click', function(){
+        var self = this;
+        if(navigator.bluetooth && navigator.bluetooth.requestDevice){
+            navigator.bluetooth.requestDevice({ acceptAllDevices: true })
+            .then(function(dev){
+                self.classList.add('active');
+                var addr = dev.id || "WEB-BLE-" + hashAddr(dev.name || "node");
+                addr = addr.toUpperCase();
+                var record = {
+                    address: addr,
+                    name: dev.name || "Web BLE Device",
+                    rssi: -52, avg_rssi: -52,
+                    tx_power: -59, est_distance: 0.8,
+                    manufacturer_data: "Selected via Web Bluetooth API",
+                    service_uuids: '', times_seen: 1,
+                    last_seen: new Date().toLocaleTimeString(),
+                    resolved: false, is_rpa: false,
+                    _updateTs: Date.now()
+                };
+                devices[addr] = record;
+                updateDeviceList();
+                playPing("new");
+            })
+            .catch(function(err){ console.warn("Web BLE cancel/err:", err); });
+        } else {
+            alert("Web Bluetooth API not supported in current browser context.");
+        }
+    });
+
+    /* ================================================================
+       Pinned Devices Panel & Sparklines
+       ================================================================ */
+    var rssiHistory = {};
+    var RSSI_HISTORY_MAX = 30;
+    var pinEntries = {};
+
+    function recordRssi(addr, rssi){
+        if(rssi == null) return;
+        if(!rssiHistory[addr]) rssiHistory[addr] = [];
+        rssiHistory[addr].push({rssi: rssi, ts: Date.now()});
+        if(rssiHistory[addr].length > RSSI_HISTORY_MAX) rssiHistory[addr].shift();
+    }
+
+    function rssiTrend(addr){
+        var hist = rssiHistory[addr];
+        if(!hist || hist.length < 3) return "steady";
+        var recent = 0, older = 0, rc = 0, oc = 0;
+        for(var i=hist.length-1; i>=0; i--){
+            if(rc < 3){ recent += hist[i].rssi; rc++; }
+            else { older += hist[i].rssi; oc++; }
+        }
+        if(oc === 0) return "steady";
+        var diff = (recent / rc) - (older / oc);
+        if(diff > 3) return "closer";
+        if(diff < -3) return "farther";
+        return "steady";
+    }
+
+    function drawSparkline(canvas, addr, colorHex){
+        var hist = rssiHistory[addr];
+        if(!hist || hist.length < 2) return;
+        var ctx = canvas.getContext("2d");
+        var W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        var minR = -100, maxR = -30;
+        var pts = hist.slice(-20);
+        var step = W / (pts.length - 1);
+        var grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, hexToRgba(colorHex, 0.3));
+        grad.addColorStop(1, hexToRgba(colorHex, 0.02));
+        ctx.beginPath(); ctx.moveTo(0, H);
+        for(var i=0; i<pts.length; i++){
+            var x = i * step;
+            var y = H - ((pts[i].rssi - minR) / (maxR - minR)) * H;
+            y = Math.max(2, Math.min(H - 2, y));
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(W, H); ctx.closePath();
+        ctx.fillStyle = grad; ctx.fill();
+
+        ctx.beginPath();
+        for(var j=0; j<pts.length; j++){
+            var lx = j * step;
+            var ly = H - ((pts[j].rssi - minR) / (maxR - minR)) * H;
+            ly = Math.max(2, Math.min(H - 2, ly));
+            if(j === 0) ctx.moveTo(lx, ly);
+            else ctx.lineTo(lx, ly);
+        }
+        ctx.strokeStyle = colorHex; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    window.togglePin = function(addr){
+        if(pinnedAddrs[addr]){
+            delete pinnedAddrs[addr];
+            delete rssiHistory[addr];
+        } else {
+            pinnedAddrs[addr] = true;
+            var d = devices[addr];
+            if(d && d.rssi != null) recordRssi(addr, d.rssi);
+        }
+        updateDeviceList();
+        updatePinnedPanel();
+    };
+
+    function updatePinnedPanel(){
+        var scroll = document.getElementById("pinned-scroll");
+        var addrs = Object.keys(pinnedAddrs);
+        var countBadge = document.getElementById("pinned-count-badge");
+        if(countBadge) countBadge.textContent = addrs.length + " PINNED";
+
+        if(addrs.length === 0){
+            scroll.innerHTML = '<div style="color:var(--text-dim); font-size:11px; padding:20px; text-align:center; font-family:\'Share Tech Mono\', monospace;">No tracked nodes. Pin any beacon from the table below to monitor live RSSI drift.</div>';
+            pinEntries = {};
+            return;
+        }
+
+        // Clean unpinned
+        for(var k in pinEntries){
+            if(!pinnedAddrs[k] && pinEntries[k] && pinEntries[k].parentNode){
+                scroll.removeChild(pinEntries[k]);
+                delete pinEntries[k];
+            }
+        }
+
+        for(var i=0; i<addrs.length; i++){
+            var addr = addrs[i];
+            var d = devices[addr];
+            var el = pinEntries[addr];
+            if(!el){
+                el = document.createElement("div");
+                el.className = "pin-item";
+                el.innerHTML = '<div style="flex:1; min-width:0;">'
+                    + '<div class="pe-addr"></div><div class="pe-name"></div>'
+                    + '<div class="pe-rssi-big"></div><div class="pe-dist-big"></div>'
+                    + '<canvas class="pe-sparkline" width="220" height="26"></canvas>'
+                    + '</div><span class="pe-close" onclick="togglePin(\'' + addr + '\')">&times;</span>';
+                pinEntries[addr] = el;
+                if(scroll.innerHTML.indexOf("No tracked nodes") !== -1){ scroll.innerHTML = ""; }
+                scroll.appendChild(el);
+            }
+
+            el.querySelector(".pe-addr").textContent = addr;
+            el.querySelector(".pe-name").textContent = (d && d.name && d.name !== "Unknown") ? d.name : "Unknown Beacon";
+            var trend = rssiTrend(addr);
+            var trendArrow = trend === "closer" ? " ▲ CLOSER" : trend === "farther" ? " ▼ FARTHER" : " ● STEADY";
+            var trendColor = trend === "closer" ? "#00FF88" : trend === "farther" ? "#EF4444" : "#FFD600";
+            var devColor = d ? colorFromRssiOrDist(d) : "#7E8FA4";
+
+            el.querySelector(".pe-rssi-big").innerHTML = (d && d.rssi != null) ?
+                '<span style="color:' + devColor + '">' + d.rssi + ' dBm</span>' +
+                '<span style="color:' + trendColor + '; margin-left:8px; font-size:10px;">' + trendArrow + '</span>' : '';
+
+            el.querySelector(".pe-dist-big").textContent = (d && d.est_distance != null && d.est_distance !== "") ?
+                "~" + Number(d.est_distance).toFixed(1) + " m away" : "distance unknown";
+
+            var spark = el.querySelector(".pe-sparkline");
+            if(spark) drawSparkline(spark, addr, devColor);
+            el.style.borderLeftColor = devColor;
+        }
+    }
+
+    /* ================================================================
+       Device List Table
+       ================================================================ */
+    var dlEntries = {};
+    var dlPendingUpdate = false;
+    var dlLastOrder = "";
+
+    function updateDeviceList(){
+        if(dlPendingUpdate) return;
+        dlPendingUpdate = true;
+        setTimeout(function(){ dlPendingUpdate = false; updateDeviceListNow(); }, 400);
+    }
+
+    function updateDeviceListNow(){
+        var tbody = document.getElementById("devices-tbody");
+        var list = Object.values(devices);
+        list.sort(function(a, b){
+            var va = a.rssi != null ? a.rssi : -999;
+            var vb = b.rssi != null ? b.rssi : -999;
+            return vb - va;
+        });
+
+        if(list.length === 0){
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-dim); padding:24px;">BLE sweep active. Listening for advertisement packets...</td></tr>';
+            return;
+        }
+
+        var orderKey = "";
+        for(var i=0; i<list.length; i++){
+            var d = list[i];
+            var el = dlEntries[d.address];
+            if(!el){
+                el = document.createElement("tr");
+                el.setAttribute("data-addr", d.address);
+                el.addEventListener("mouseenter", (function(addr){
+                    return function(e){ hoveredAddr = addr; var dd = devices[addr]; if(dd) showTooltip(dd, e.clientX, e.clientY); };
+                })(d.address));
+                el.addEventListener("mousemove", function(e){ positionTooltip(document.getElementById("radar-tooltip"), e.clientX, e.clientY); });
+                el.addEventListener("mouseleave", function(){ hoveredAddr = null; hideTooltip(); });
+                dlEntries[d.address] = el;
+            }
+
+            var isPinned = pinnedAddrs[d.address];
+            var nameVal = d.name && d.name !== "Unknown" ? esc(d.name) : '<span style="color:var(--text-dim); opacity:0.6;">Unknown</span>';
+            var typeVal = d.is_rpa ? '<span style="color:var(--accent-magenta); font-weight:bold;">RPA (Resolvable)</span>' : '<span style="color:var(--accent-green);">Public</span>';
+            var col = colorFromRssiOrDist(d);
+            var distStr = (d.est_distance != null && d.est_distance !== "") ? "~" + Number(d.est_distance).toFixed(1) + " m" : '<span style="color:var(--text-dim); opacity:0.6;">--</span>';
+
+            el.innerHTML = `
+                <td><span style="cursor:pointer; text-decoration:underline; color:var(--accent-cyan);" onclick="copyToResolver('${d.address}')">${d.address}</span></td>
+                <td>${nameVal}</td>
+                <td style="color:${col}; font-weight:bold;">${d.rssi} dBm</td>
+                <td>${distStr}</td>
+                <td>${typeVal}</td>
+                <td>${d.times_seen || 1}</td>
+                <td>${d.last_seen || ''}</td>
+                <td>
+                    <button class="action-icon-btn ${isPinned ? 'pin-active' : ''}" title="${isPinned ? 'Unpin' : 'Pin'}" onclick="togglePin('${d.address}')">
+                        <i class="fas fa-thumbtack"></i>
+                    </button>
+                    <button class="action-icon-btn" title="Copy to IRK Resolver" onclick="copyToResolver('${d.address}')">
+                        <i class="fas fa-key"></i>
+                    </button>
+                </td>
+            `;
+
+            if(!el.parentNode) tbody.appendChild(el);
+            orderKey += d.address + ",";
+        }
+
+        if(orderKey !== dlLastOrder){
+            dlLastOrder = orderKey;
+            for(var j=0; j<list.length; j++){ tbody.appendChild(dlEntries[list[j].address]); }
+        }
+    }
+
+    /* ================================================================
+       Tooltip
+       ================================================================ */
+    function showTooltip(dev, x, y){
+        var tip = document.getElementById("radar-tooltip");
+        var html = "";
+        html += '<span class="lbl">Address:</span> <span class="val">' + esc(dev.address) + '</span><br>';
+        html += '<span class="lbl">Name:</span> <span class="val">' + esc(dev.name || "Unknown") + '</span><br>';
+        html += '<span class="lbl">RSSI:</span> <span class="val">' + (dev.rssi != null ? dev.rssi + " dBm" : "N/A") + '</span><br>';
+        if(dev.tx_power) html += '<span class="lbl">TX Power:</span> <span class="val">' + dev.tx_power + ' dBm</span><br>';
+        if(dev.est_distance) html += '<span class="lbl">Distance:</span> <span class="val">~' + Number(dev.est_distance).toFixed(1) + ' m</span><br>';
+        html += '<span class="lbl">RPA Type:</span> <span class="val">' + (dev.is_rpa ? '<span style="color:#FF007F">Resolvable Private Address</span>' : 'Public') + '</span><br>';
+        if(dev.manufacturer_data) html += '<span class="lbl">Mfr:</span> <span class="val">' + esc(dev.manufacturer_data) + '</span><br>';
+        html += '<span class="lbl">Packets:</span> <span class="val">' + (dev.times_seen || 1) + '</span>';
+        tip.innerHTML = html;
+        tip.style.display = "block";
+        positionTooltip(tip, x, y);
+    }
+
+    function positionTooltip(tip, x, y){
+        var tw = tip.offsetWidth, th = tip.offsetHeight;
+        var wx = window.innerWidth, wy = window.innerHeight;
+        var lx = x + 14, ly = y + 14;
+        if(lx + tw > wx - 8) lx = x - tw - 14;
+        if(ly + th > wy - 8) ly = y - th - 14;
+        tip.style.left = Math.max(4, lx) + "px";
+        tip.style.top  = Math.max(4, ly) + "px";
+    }
+
+    function hideTooltip(){ document.getElementById("radar-tooltip").style.display = "none"; }
+    function esc(s){ if(!s) return ""; var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+    /* ================================================================
+       Audio Synthesizer Pings
+       ================================================================ */
+    var audioCtx = null;
+    var soundEnabled = false;
+    var soundBtn = document.getElementById("btn-audio-toggle");
+
+    soundBtn.addEventListener("click", function(){
+        soundEnabled = !soundEnabled;
+        var icon = document.getElementById("audio-icon");
+        var text = document.getElementById("audio-text");
+        if(soundEnabled){
+            icon.className = "fas fa-volume-high";
+            text.textContent = "Audio ON";
+            soundBtn.style.color = "var(--primary-color)";
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } else {
+            icon.className = "fas fa-volume-xmark";
+            text.textContent = "Muted";
+            soundBtn.style.color = "var(--text-main)";
+        }
+    });
+
+    function playPing(type){
+        if(!soundEnabled || !audioCtx) return;
+        try {
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            var now = audioCtx.currentTime;
+            if(type === "new"){
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.linearRampToValueAtTime(1200, now + 0.12);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                osc.start(now); osc.stop(now + 0.18);
+            } else if(type === "pinned"){
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if(type === "irk"){
+                osc.type = "square";
+                osc.frequency.setValueAtTime(520, now);
+                osc.frequency.setValueAtTime(1040, now + 0.08);
+                gain.gain.setValueAtTime(0.07, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+                osc.start(now); osc.stop(now + 0.22);
+            }
+        } catch(e){}
+    }
+
+    /* ================================================================
+       POLLING ENGINE
+       ================================================================ */
+    function fetchDevices(){
+        fetch('/api/btscan/devices')
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if(data.status !== 'success') return;
+                var devList = data.devices || [];
+
+                document.getElementById("s-unique").textContent = data.total || devList.length;
+                document.getElementById("s-unique-nav").textContent = data.total || devList.length;
+                document.getElementById("s-total").textContent = data.total_detections || devList.length;
+
+                if(data.elapsed != null){
+                    var m = Math.floor(data.elapsed / 60), s = Math.floor(data.elapsed % 60);
+                    document.getElementById("s-elapsed").textContent = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+                }
+
+                var now = Date.now();
+                var newDevices = {};
+                for(var i=0; i<devList.length; i++){
+                    var d = devList[i];
+                    var existing = devices[d.address];
+                    var isNew = !existing;
+
+                    d._updateTs = (existing && existing.last_seen === d.last_seen) ? existing._updateTs : now;
+
+                    // Geolocation calculation if user GPS coordinates are locked
+                    if((!d.best_gps || !d.best_gps.lat) && hasGPS && scannerGPS){
+                        var dist = d.est_distance || 8;
+                        var angle = (hashAddr(d.address) % 3600) / 3600 * Math.PI * 2;
+                        var latOffset = (Math.sin(angle) * dist) / 111111;
+                        var lonOffset = (Math.cos(angle) * dist) / (111111 * Math.cos(scannerGPS.lat * Math.PI / 180));
+                        d.best_gps = {
+                            lat: scannerGPS.lat + latOffset,
+                            lon: scannerGPS.lon + lonOffset
+                        };
+                    }
+
+                    newDevices[d.address] = d;
+
+                    if(pinnedAddrs[d.address]){
+                        recordRssi(d.address, d.rssi);
+                        if(!isNew && existing && existing.rssi !== d.rssi) playPing("pinned");
+                    }
+
+                    if(isNew){
+                        var W = rCanvas.width, H = rCanvas.height;
+                        spawnPing(d, W / 2, H / 2, Math.min(W, H) * 0.44);
+                        playPing("new");
+                    }
+                    updateDevMarker(d);
+                }
+
+                // Preserve pinned addresses
+                for(var p in pinnedAddrs){
+                    if(!newDevices[p] && devices[p]){
+                        newDevices[p] = devices[p];
+                    }
+                }
+
+                devices = newDevices;
+                updateDeviceList();
+                updatePinnedPanel();
+            })
+            .catch(function(e){ console.warn("Fetch bt devices failed:", e); });
+    }
+
+    setInterval(fetchDevices, 2000);
+    fetchDevices();
+
+    /* ================================================================
+       IRK Resolver Engine
+       ================================================================ */
+    function runIrkResolve(){
+        var irk = document.getElementById('irk-input').value.trim();
+        var mac = document.getElementById('mac-input').value.trim();
+        var resDiv = document.getElementById('irk-result');
+        if(!irk || !mac){
+            resDiv.innerHTML = '<span style="color:var(--accent-red)">Provide both 32-hex IRK key and Target MAC address.</span>';
+            return;
+        }
+
+        resDiv.innerHTML = '<span style="color:var(--accent-cyan)">Computing AES-128-ECB ah() resolution...</span>';
+
+        fetch('/api/btscan/resolve_irk_v2', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({irk: irk, mac: mac})
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if(data.status === 'success'){
+                if(data.matched){
+                    resDiv.innerHTML = '<span style="color:#00FF88; font-weight:bold;">✔ MATCH CONFIRMED — Address ' + esc(data.mac) + ' matches IRK ' + esc(data.irk_masked) + '</span>';
+                    playPing("irk");
+                } else {
+                    resDiv.innerHTML = '<span style="color:var(--accent-red);">✘ NO MATCH — ' + esc(data.mac) + ' was NOT generated with IRK ' + esc(data.irk_masked) + (data.is_rpa ? ' (Target is RPA)' : ' (Target is NOT RPA)') + '</span>';
+                }
+            } else {
+                resDiv.innerHTML = '<span style="color:var(--accent-red);">Error: ' + esc(data.error) + '</span>';
+            }
+        })
+        .catch(function(err){
+            resDiv.innerHTML = '<span style="color:var(--accent-red);">Network Error: ' + esc(err.message) + '</span>';
+        });
+    }
+
+    document.getElementById('irk-run-btn').addEventListener('click', runIrkResolve);
+
+    window.copyToResolver = function(mac){
+        document.getElementById('mac-input').value = mac;
+        document.getElementById('irk-input').focus();
+    };
+
+    })();
+
+    /* ================================================================
+       Host Bluetooth Daemon Management Modal Logic
+       ================================================================ */
+    function openBtServiceModal(){
+        document.getElementById('bt-service-modal-backdrop').classList.add('open');
+        loadDaemonStatus();
+    }
+
+    function closeBtServiceModal(){
+        document.getElementById('bt-service-modal-backdrop').classList.remove('open');
+    }
+
+    function onServiceModalBackdrop(e){
+        if(e.target.id === 'bt-service-modal-backdrop') closeBtServiceModal();
+    }
+
+    async function loadDaemonStatus(){
+        try {
+            const res = await fetch('/api/bluetooth/status');
+            const data = await res.json();
+            if(data.status === 'success'){
+                const os = data.os || {};
+                const svc = data.service || {};
+                const osEl = document.getElementById('m-os-name');
+                const badgeEl = document.getElementById('m-service-badge');
+                const adapterEl = document.getElementById('m-adapter-status');
+                const kernelEl = document.getElementById('m-kernel-ver');
+                const rfkillEl = document.getElementById('m-rfkill-status');
+
+                if(osEl) osEl.textContent = (os.name || 'Linux') + (os.is_kali ? ' (Kali Cyber Subsystem)' : '');
+                if(kernelEl) kernelEl.textContent = `Kernel ${os.kernel || 'Unknown'} · Arch ${os.arch || 'x86_64'}`;
+                if(adapterEl){
+                    adapterEl.innerHTML = svc.adapter_up
+                        ? `<span style="color:#00FF88; font-weight:700;">hci0 [UP &amp; RUNNING]</span>`
+                        : `<span style="color:#ff5555; font-weight:700;">hci0 [DOWN / STOPPED]</span>`;
+                }
+                if(badgeEl){
+                    if(svc.service_active){
+                        badgeEl.textContent = 'ACTIVE';
+                        badgeEl.style.background = 'rgba(0, 255, 136, 0.15)';
+                        badgeEl.style.color = '#00FF88';
+                        badgeEl.style.border = '1px solid rgba(0, 255, 136, 0.4)';
+                    } else {
+                        badgeEl.textContent = 'DEAD / INACTIVE';
+                        badgeEl.style.background = 'rgba(255, 50, 50, 0.15)';
+                        badgeEl.style.color = '#ff5555';
+                        badgeEl.style.border = '1px solid rgba(255, 50, 50, 0.4)';
+                    }
+                }
+                if(rfkillEl){
+                    rfkillEl.innerHTML = svc.rfkill_blocked
+                        ? `<span style="color:#FFA502;"><i class="fas fa-triangle-exclamation"></i> rfkill: SOFT/HARD BLOCKED</span>`
+                        : `<span style="color:var(--text-dim);"><i class="fas fa-check-circle" style="color:#00FF88;"></i> rfkill: Unblocked</span>`;
+                }
+            }
+        } catch(e){
+            console.warn("Daemon status fetch error:", e);
+        }
+    }
+
+    async function executeDaemonAction(action){
+        const pass = document.getElementById('m-sudo-pass').value;
+        const consoleEl = document.getElementById('m-action-console');
+        if(consoleEl){
+            consoleEl.style.display = 'block';
+            consoleEl.textContent = `[EXEC] Executing '${action}' on host bluetooth daemon...`;
+        }
+        try {
+            const res = await fetch('/api/bluetooth/service_action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action: action, password: pass})
+            });
+            const data = await res.json();
+            if(consoleEl){
+                consoleEl.textContent = `[RESULT] ${data.status.toUpperCase()}\n${data.message || ''}`;
+            }
+            setTimeout(loadDaemonStatus, 800);
+        } catch(err){
+            if(consoleEl) consoleEl.textContent = `[ERROR] Failed to execute: ${err.message}`;
+        }
+    }
+    </script>
+</body>
+</html>

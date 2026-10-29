@@ -1,0 +1,122 @@
+[
+  {
+    "id": "document-0",
+    "text": "A cat is sitting on the mat.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/0",
+    "value": 0,
+    "second": 0,
+    "relation_source": "topic-0",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-1",
+    "text": "Кот сидит на коврике.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/1",
+    "value": 1,
+    "second": 1,
+    "relation_source": "topic-0",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-2",
+    "text": "A kitten rests on the carpet.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/2",
+    "value": 2,
+    "second": 2,
+    "relation_source": "topic-0",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-3",
+    "text": "The company published its annual financial report.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/3",
+    "value": 3,
+    "second": 0,
+    "relation_source": "topic-1",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-4",
+    "text": "Компания опубликовала годовой финансовый отчёт.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/4",
+    "value": 4,
+    "second": 1,
+    "relation_source": "topic-1",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-5",
+    "text": "Annual accounts describe the company revenue.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/5",
+    "value": 5,
+    "second": 2,
+    "relation_source": "topic-1",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-6",
+    "text": "Astronomers observed a distant galaxy.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/6",
+    "value": 6,
+    "second": 0,
+    "relation_source": "topic-2",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-7",
+    "text": "Астрономы наблюдали далёкую галактику.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/7",
+    "value": 7,
+    "second": 1,
+    "relation_source": "topic-2",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-8",
+    "text": "A telescope captured a distant star system.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/8",
+    "value": 8,
+    "second": 2,
+    "relation_source": "topic-2",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-9",
+    "text": "A student is studying mathematics.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/9",
+    "value": 9,
+    "second": 0,
+    "relation_source": "topic-3",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-10",
+    "text": "Студент изучает математику.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/10",
+    "value": 10,
+    "second": 1,
+    "relation_source": "topic-3",
+    "relation_target": "example-corpus"
+  },
+  {
+    "id": "document-11",
+    "text": "Students solve algebra problems.",
+    "source": "Synthetic multilingual example",
+    "source_url": "https://example.org/document/11",
+    "value": 11,
+    "second": 2,
+    "relation_source": "topic-3",
+    "relation_target": "example-corpus"
+  }
+]

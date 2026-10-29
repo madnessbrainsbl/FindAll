@@ -1,0 +1,20 @@
+title = "FindAll source publication"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Verified public upstream constant; not an account credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''(^|/)jobfind/third_party/spiderfoot/modules/sfp_citadel\.py$''']
+regexes = ['''^\s*apikey\s*=\s*"3edfb5603418f101926c64ca5dd0e409"\s*$''']
+
+[[allowlists]]
+description = "Verified public upstream constant; not an account credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''(^|/)jobfind/third_party/waymore/waymore/waymore\.py$''']
+regexes = ['''^\s*API_KEY_SECRET\s*=\s*"aHR0cHM6Ly95b3V0dS5iZS9kUXc0dzlXZ1hjUQ=="\s*$''']

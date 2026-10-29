@@ -1,0 +1,42 @@
+[
+  {
+    "id": "station-0",
+    "target_id": "synthetic beacon",
+    "observer_latitude": 0,
+    "observer_longitude": 0,
+    "source_url": "https://example.org/station/0",
+    "source": "Synthetic calibrated observation",
+    "range_m": 1572.5359013624186,
+    "range_error_m": 5
+  },
+  {
+    "id": "station-1",
+    "target_id": "synthetic beacon",
+    "observer_latitude": 0,
+    "observer_longitude": 0.02,
+    "source_url": "https://example.org/station/1",
+    "source": "Synthetic calibrated observation",
+    "range_m": 1572.5359013624186,
+    "range_error_m": 5
+  },
+  {
+    "id": "station-2",
+    "target_id": "synthetic beacon",
+    "observer_latitude": 0.02,
+    "observer_longitude": 0,
+    "source_url": "https://example.org/station/2",
+    "source": "Synthetic calibrated observation",
+    "range_m": 1572.535877411327,
+    "range_error_m": 5
+  },
+  {
+    "id": "station-3",
+    "target_id": "synthetic beacon",
+    "observer_latitude": 0.02,
+    "observer_longitude": 0.02,
+    "source_url": "https://example.org/station/3",
+    "source": "Synthetic calibrated observation",
+    "range_m": 1572.535877411327,
+    "range_error_m": 5
+  }
+]

@@ -1,0 +1,15 @@
+osint-keys.env
+.venv/
+.tools-venv/
+.harvester-venv/
+__pycache__/
+*.pyc
+profile.json
+jobfind_out/
+*.db
+rust-ui/target/
+third_party/web-check/node_modules/
+third_party/web-check/dist/
+third_party/tor/
+third_party/tiktok-scraper/node_modules/
+third_party/tiktok-scraper/build/

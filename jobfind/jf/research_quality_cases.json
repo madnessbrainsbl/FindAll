@@ -1,0 +1,47 @@
+[
+  {
+    "dossier": {
+      "sections": {"web": [{"url": "https://example.org/", "title": "Example Studio", "snippet": "Example Studio publishes 12 projects."}]},
+      "source_checks": [{"source": "synthetic", "state": "ok", "count": 1}],
+      "ai_analysis": {"status": "ok", "claims": [{"evidence_id": "E1", "quote": "12 projects", "statement": "The page reports 12 projects.", "source_url": "https://example.org/", "section": "web", "provenance": "search_match", "attribution": "Search match; target identity unverified"}]}
+    },
+    "expected": {"status": "ready_for_review", "metrics": {"citation_checks_passed": 1, "candidate_evidence_items": 1}, "forbidden_codes": ["quote_not_found"]}
+  },
+  {
+    "dossier": {"sections": {"profiles": [{"url": "https://example.org/profile", "username": "sample_handle"}]}, "source_checks": [{"source": "synthetic", "state": "blocked"}], "ai_analysis": {"status": "no_conclusions", "claims": []}},
+    "expected": {"status": "needs_review", "required_codes": ["source_coverage_gap", "ai_answer_incomplete"], "metrics": {"claims_total": 0}}
+  },
+  {
+    "dossier": {"sections": {"web": [{"url": "https://example.org/", "snippet": "12 projects"}]}, "ai_analysis": {"claims": [{"evidence_id": "E99", "quote": "12 projects", "statement": "12 projects"}]}},
+    "expected": {"status": "invariant_failures", "required_codes": ["missing_evidence_id"]}
+  },
+  {
+    "dossier": {
+      "sections": {"web": [{"url": "https://example.org/", "snippet": "12 projects"}]},
+      "ai_analysis": {"claims": [{"evidence_id": "E1", "quote": "12 projects", "statement": "The page reports 120 projects.", "source_url": "https://example.org/", "section": "web", "provenance": "search_match", "attribution": "Search match; target identity unverified"}]}
+    },
+    "expected": {"status": "invariant_failures", "required_codes": ["identifier_absent_from_quote"], "metrics": {"citation_checks_passed": 0}}
+  },
+  {
+    "dossier": {
+      "sections": {"profiles": [{"url": "https://example.org/profile", "username": "sample_handle", "snippet": "Sample Studio profile"}]},
+      "ai_analysis": {"claims": [{"evidence_id": "E1", "quote": "Sample Studio profile", "statement": "This is the same person.", "source_url": "https://example.org/profile", "section": "profiles", "provenance": "profile_candidate", "attribution": "Matching profile; account ownership unverified"}]}
+    },
+    "expected": {"status": "needs_review", "required_codes": ["identity_assertion_requires_review"], "metrics": {"citation_checks_passed": 1}}
+  },
+  {
+    "dossier": {"sections": {}, "source_checks": [{"source": "synthetic", "state": "running"}, {"source": "synthetic", "state": "ok"}], "ai_analysis": {"status": "ok", "claims": []}},
+    "expected": {"status": "invariant_failures", "required_codes": ["successful_ai_without_claims"], "forbidden_codes": ["unfinished_source_check"], "metrics": {"source_checks_total": 1}}
+  },
+  {
+    "dossier": {"sections": {"webcheck_modules": [{"url": "https://example.org/", "status": "error", "details": "Authentication failed: secret-token"}]}, "source_checks": [{"source": "synthetic", "state": "error"}]},
+    "expected": {"status": "needs_review", "required_codes": ["source_coverage_gap"], "metrics": {"evidence_sample_items": 0}}
+  },
+  {
+    "dossier": {
+      "sections": {"web": [{"url": "https://example.org/", "snippet": "Example Studio publishes articles."}]},
+      "ai_analysis": {"claims": [{"evidence_id": "E1", "quote": "Example Studio", "statement": "The page mentions Example Studio.", "source_url": "https://example.net/", "section": "web", "provenance": "public_source", "attribution": "identity verified"}]}
+    },
+    "expected": {"status": "invariant_failures", "required_codes": ["source_url_mismatch", "source_provenance_mismatch", "source_attribution_mismatch"]}
+  }
+]
