@@ -12,7 +12,7 @@ spec.loader.exec_module(export)
 class PublicationTests(unittest.TestCase):
     def test_private_workspace_reference_is_removed_only_from_export(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder) / "source"
+            root = Path(folder).resolve() / "source"
             document = root / "jobfind/AGENTS.md"
             document.parent.mkdir(parents=True)
             original = "`X:\\private\\other-project` is read-only. Do not copy its secrets."
@@ -46,7 +46,7 @@ class PublicationTests(unittest.TestCase):
 
     def test_export_copies_source_and_refuses_existing_destination(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder) / "source"
+            root = Path(folder).resolve() / "source"
             root.mkdir()
             document = root / "hello.py"
             document.write_text("print('hello')\n", encoding="utf-8")
