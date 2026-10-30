@@ -45,7 +45,7 @@ class MarkdownExportTest(unittest.TestCase):
             self.assertNotEqual(first["obsidian_directory"], second["obsidian_directory"])
             self.assertEqual(note.read_text(encoding="utf-8"), "user note")
             folder = Path(first["obsidian_directory"])
-            self.assertTrue(folder.is_relative_to(vault))
+            self.assertTrue(folder.is_relative_to(vault.resolve()))
             for node in result["relationship_graph"]["nodes"]:
                 text = (folder / (node["id"] + ".md")).read_text(encoding="utf-8")
                 self.assertIn("[[index|Run index]]", text)

@@ -79,7 +79,7 @@ class ApexIntegrationTests(unittest.TestCase):
                 patch.object(jobfind, "cmd_projects", return_value=0):
             self.assertEqual(jobfind.main(["--db", str(Path(tmp) / "data.db"), "--network", "apex",
                                           "projects", "--kw", "python"]), 0)
-            route.assert_called_once_with(Path(tmp) / "network" / "apex-state.json", "apex")
+            route.assert_called_once_with(Path(tmp).resolve() / "network" / "apex-state.json", "apex")
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(jobfind.main(["network", "status"]), 0)
 
@@ -88,7 +88,7 @@ class ApexIntegrationTests(unittest.TestCase):
                 patch.object(jobfind, "cmd_onion_search", return_value=0):
             self.assertEqual(jobfind.main(["--db", str(Path(tmp) / "data.db"), "--network", "apex",
                                           "onion-search", "--query", "privacy"]), 0)
-            route.assert_called_once_with(Path(tmp) / "network" / "apex-state.json", "apex")
+            route.assert_called_once_with(Path(tmp).resolve() / "network" / "apex-state.json", "apex")
 
     def test_failover_and_no_direct_fallback(self):
         state = {"enabled": True, "selected": "a", "rows": [

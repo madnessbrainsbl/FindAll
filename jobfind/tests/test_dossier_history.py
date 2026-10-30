@@ -70,7 +70,7 @@ class HistoryTest(unittest.TestCase):
             now = report(emails=[{"email": "new@example.org", "source": "Contacts"}])
             now["report_json"] = str(path)
             dossier_history.enrich(now, Path(root))
-            self.assertEqual(now["history"]["comparison"]["previous_report"], str(old_path))
+            self.assertEqual(now["history"]["comparison"]["previous_report"], str(old_path.resolve()))
             self.assertEqual(old_path.read_bytes(), original)
             self.assertEqual(now["history"]["comparison"]["added"][0]["value"], "new@example.org")
 

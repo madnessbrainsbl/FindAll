@@ -147,7 +147,7 @@ def _read_records(path):
                 break
     elif ext in ('.db', '.sqlite', '.sqlite3'):
         uri = path.resolve().as_uri() + '?mode=ro&immutable=1'
-        with sqlite3.connect(uri, uri=True, timeout=3) as conn:
+        with contextlib.closing(sqlite3.connect(uri, uri=True, timeout=3)) as conn:
             conn.row_factory = sqlite3.Row
             ticks = [0]
             def budget():

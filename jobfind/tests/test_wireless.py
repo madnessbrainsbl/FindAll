@@ -5,6 +5,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 from types import SimpleNamespace
@@ -78,11 +79,18 @@ class WirelessTests(unittest.TestCase):
 
     def test_sqlite_is_read_only_and_quotes_table_names(self):
         p=self.root/'survey.db'
-        with sqlite3.connect(p) as c:
+        with closing(sqlite3.connect(p)) as c, c:
             c.execute('CREATE TABLE "survey\'data" (name TEXT, latitude REAL, longitude REAL)')
             c.execute('INSERT INTO "survey\'data" VALUES (?,?,?)',('Demo',12,24))
         digest=hashlib.sha256(p.read_bytes()).hexdigest()
-        rows,*_=wireless.import_file(p)
+        conn=sqlite3.connect(p.resolve().as_uri()+'?mode=ro&immutable=1',uri=True)
+        try:
+            with patch.object(wireless.sqlite3,'connect',return_value=conn):
+                rows,*_=wireless.import_file(p)
+            with self.assertRaises(sqlite3.ProgrammingError):
+                conn.execute('SELECT 1')
+        finally:
+            conn.close()
         self.assertEqual(rows[0]['latitude'],12)
         self.assertEqual(digest,hashlib.sha256(p.read_bytes()).hexdigest())
         self.assertFalse(p.with_name(p.name+'-journal').exists())

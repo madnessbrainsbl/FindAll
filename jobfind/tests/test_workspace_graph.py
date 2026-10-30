@@ -55,7 +55,7 @@ class WorkspaceGraphTests(unittest.TestCase):
             match = next(r for r in rows if r.get("kind") == "SearchMatch" and len(r["evidence_hashes"]) == 2)
             self.assertEqual(match["certainty"], "candidate")
             self.assertEqual(match["source_urls"], ["https://example.org/page"])
-            self.assertEqual(list(out.glob("*.html")), [Path(first["graph_path"])])
+            self.assertEqual([path.resolve() for path in out.glob("*.html")], [Path(first["graph_path"])])
             self.assertFalse(list(out.glob("*.json")))
             self.assertFalse(list(out.glob("*.csv")))
 

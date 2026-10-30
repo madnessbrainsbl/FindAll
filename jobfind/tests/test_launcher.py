@@ -78,7 +78,7 @@ public class LauncherProbe {
                     if stamp is not None:
                         self.binary(app / relative, stamp)
                 lines = self.launch(root / "start.bat", root / "result.txt", "--page browser --label 'Два слова & more'")
-                self.assertEqual(Path(lines[0]), app / expected)
+                self.assertEqual(Path(lines[0]).resolve(), (app / expected).resolve())
                 self.assertEqual(lines[1:], ["--page", "browser", "--label", "Два слова & more"])
 
     def test_section_launchers_share_binary_selection_and_forward_arguments(self):
@@ -90,7 +90,7 @@ public class LauncherProbe {
             self.binary(newest, 200)
             for section in ("archives", "wireless"):
                 lines = self.launch(app / (section + ".bat"), root / (section + ".txt"), "--label 'two words'")
-                self.assertEqual(Path(lines[0]), newest)
+                self.assertEqual(Path(lines[0]).resolve(), newest.resolve())
                 self.assertEqual(lines[1:], ["--page", section, "--label", "two words"])
 
     def test_wireless_cli_uses_the_shared_launcher_without_a_console_window(self):
